@@ -5,19 +5,26 @@ from .forms import *
 from django.shortcuts import render, get_object_or_404
 from django.shortcuts import redirect
 from django.db.models import Sum
-
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from .serializers import CustomerSerializer
 
 
 now = timezone.now()
+
+
 def home(request):
    return render(request, 'crm/home.html',
                  {'crm': home})
+
 
 @login_required
 def customer_list(request):
     customer = Customer.objects.filter(created_date__lte=timezone.now())
     return render(request, 'crm/customer_list.html',
                  {'customers': customer})
+
 
 @login_required
 def customer_edit(request, pk):
@@ -37,11 +44,13 @@ def customer_edit(request, pk):
        form = CustomerForm(instance=customer)
    return render(request, 'crm/customer_edit.html', {'form': form})
 
+
 @login_required
 def customer_delete(request, pk):
    customer = get_object_or_404(Customer, pk=pk)
    customer.delete()
    return redirect('crm:customer_list')
+
 
 @login_required
 def service_delete(request, pk):
@@ -49,21 +58,25 @@ def service_delete(request, pk):
    service.delete()
    return redirect('crm:service_list')
 
+
 @login_required
 def product_delete(request, pk):
    product = get_object_or_404(Product, pk=pk)
    product.delete()
    return redirect('crm:product_list')
 
+
 @login_required
 def service_list(request):
    services = Service.objects.filter(created_date__lte=timezone.now())
    return render(request, 'crm/service_list.html', {'services': services})
 
+
 @login_required
 def product_list(request):
    products = Product.objects.filter(created_date__lte=timezone.now())
    return render(request, 'crm/product_list.html', {'products': products})
+
 
 @login_required
 def service_new(request):
@@ -81,6 +94,7 @@ def service_new(request):
        # print("Else")
    return render(request, 'crm/service_new.html', {'form': form})
 
+
 @login_required
 def product_new(request):
    if request.method == "POST":
@@ -96,6 +110,7 @@ def product_new(request):
        form = ProductForm()
        # print("Else")
    return render(request, 'crm/product_new.html', {'form': form})
+
 
 @login_required
 def service_edit(request, pk):
@@ -113,6 +128,7 @@ def service_edit(request, pk):
        # print("else")
        form = ServiceForm(instance=service)
    return render(request, 'crm/service_edit.html', {'form': form})
+
 
 @login_required
 def product_edit(request, pk):
@@ -145,3 +161,11 @@ def summary(request, pk):
                                                     'services': services,
                                                     'sum_service_charge': sum_service_charge,
                                                     'sum_product_charge': sum_product_charge,})
+
+
+class CustomerList(APIView):
+
+    def get(self, request):
+        customers_json = Customer.objects.all()
+        serializer = CustomerSerializer(customers_json, many=True)
+        return Response(serializer.data)
